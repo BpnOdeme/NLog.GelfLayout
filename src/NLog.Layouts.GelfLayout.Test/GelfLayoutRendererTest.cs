@@ -284,6 +284,57 @@ namespace NLog.Layouts.GelfLayout.Test
         }
 
         [TestMethod]
+        public void CanRenderGelfIncludeGdc()
+        {
+            var loggerName = "TestLogger";
+            var facility = "TestFacility";
+            var dateTime = DateTime.Now;
+            var message = "hello, gelf :)";
+            var logLevel = LogLevel.Info;
+            var hostname = Dns.GetHostName();
+            var gelfRenderer = new GelfLayoutRenderer();
+
+            gelfRenderer.Facility = facility;
+            gelfRenderer.IncludeGdc = true;
+
+            var logEvent = new LogEventInfo
+            {
+                LoggerName = loggerName,
+                Level = logLevel,
+                Message = message,
+                TimeStamp = dateTime,
+            };
+
+            Guid requestId = Guid.NewGuid();
+            GlobalDiagnosticsContext.Set("RequestId", requestId);
+
+            var renderedGelf = gelfRenderer.Render(logEvent);
+            var expectedDateTime = GelfConverter.ToUnixTimeStamp(dateTime);
+            var expectedGelf = string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "{{\"facility\":\"{0}\","
+                    + "\"file\":\"TestLogger\","
+                    + "\"full_message\":\"{1}\","
+                    + "\"host\":\"{2}\","
+                    + "\"level\":{3},"
+                    + "\"line\":0,"
+                    + "\"short_message\":\"{4}\","
+                    + "\"timestamp\":{5},"
+                    + "\"version\":\"1.1\","
+                    + "\"_LoggerName\":\"{6}\","
+                    + "\"_RequestId\":\"{7}\"}}",
+                facility,
+                message,
+                hostname,
+                logLevel.GetOrdinal(),
+                message,
+                expectedDateTime,
+                loggerName,
+                requestId);
+            Assert.AreEqual(expectedGelf, renderedGelf);
+            GlobalDiagnosticsContext.Clear();  // Clear needed since it is a Global Context
+        }
+
+        [TestMethod]
         public void CanRenderGelfAdditionalFields()
         {
             var loggerName = "TestLogger";
@@ -292,7 +343,7 @@ namespace NLog.Layouts.GelfLayout.Test
             var message = "hello, gelf :)";
             var logLevel = LogLevel.Info;
             var hostname = Dns.GetHostName();
-            var gelfLayout= new GelfLayout();
+            var gelfLayout = new GelfLayout();
 
             gelfLayout.Facility = facility;
             gelfLayout.ExtraFields.Add(new GelfField("ThreadId", "${threadid}") { PropertyType = typeof(int) });
@@ -423,7 +474,7 @@ namespace NLog.Layouts.GelfLayout.Test
                 loggerName);
             Assert.AreEqual(expectedGelf, renderedGelf);
         }
-        
+
         [TestMethod]
         public void CanRenderGelfCustomMessage()
         {
@@ -534,7 +585,7 @@ namespace NLog.Layouts.GelfLayout.Test
 
             gelfRenderer.FullMessage = "${hostname}|${message}";
             gelfRenderer.ShortMessage = "short|${message}";
-            
+
             var logEvent = new LogEventInfo
             {
                 LoggerName = loggerName,
@@ -611,7 +662,7 @@ namespace NLog.Layouts.GelfLayout.Test
 
             gelfRenderer.FullMessage = "${hostname}|${message}";
             gelfRenderer.ShortMessage = "short|${message}";
-            
+
             var renderedGelf = gelfRenderer.Render(logEvent);
             var expectedDateTime = GelfConverter.ToUnixTimeStamp(dateTime);
             string executingDirectory = Directory.GetCurrentDirectory();
@@ -704,6 +755,59 @@ namespace NLog.Layouts.GelfLayout.Test
         }
 
         [TestMethod]
+        public void CanRenderGelfIncludeGdcCustomMessage()
+        {
+            var loggerName = "TestLogger";
+            var facility = "TestFacility";
+            var dateTime = DateTime.Now;
+            var message = "hello, gelf :)";
+            var logLevel = LogLevel.Info;
+            var hostname = Dns.GetHostName();
+            var gelfRenderer = new GelfLayoutRenderer();
+
+            gelfRenderer.Facility = facility;
+            gelfRenderer.IncludeGdc = true;
+            gelfRenderer.FullMessage = "${hostname}|${message}";
+            gelfRenderer.ShortMessage = "short|${message}";
+            var logEvent = new LogEventInfo
+            {
+                LoggerName = loggerName,
+                Level = logLevel,
+                Message = message,
+                TimeStamp = dateTime,
+            };
+
+            Guid requestId = Guid.NewGuid();
+            GlobalDiagnosticsContext.Set("RequestId", requestId);
+
+            var renderedGelf = gelfRenderer.Render(logEvent);
+            var expectedDateTime = GelfConverter.ToUnixTimeStamp(dateTime);
+            var expectedGelf = string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "{{\"facility\":\"{0}\","
+                    + "\"file\":\"TestLogger\","
+                    + "\"full_message\":\"{2}|{1}\","
+                    + "\"host\":\"{2}\","
+                    + "\"level\":{3},"
+                    + "\"line\":0,"
+                    + "\"short_message\":\"short|{4}\","
+                    + "\"timestamp\":{5},"
+                    + "\"version\":\"1.1\","
+                    + "\"_LoggerName\":\"{6}\","
+                    + "\"_RequestId\":\"{7}\"}}",
+                facility,
+                message,
+                hostname,
+                logLevel.GetOrdinal(),
+                message,
+                expectedDateTime,
+                loggerName,
+                requestId);
+            Assert.AreEqual(expectedGelf, renderedGelf);
+
+            GlobalDiagnosticsContext.Clear();  // Clear needed since it is a Global Context
+        }
+
+        [TestMethod]
         public void CanRenderGelfAdditionalFieldsCustomMessage()
         {
             var loggerName = "TestLogger";
@@ -712,14 +816,14 @@ namespace NLog.Layouts.GelfLayout.Test
             var message = "hello, gelf :)";
             var logLevel = LogLevel.Info;
             var hostname = Dns.GetHostName();
-            var gelfLayout= new GelfLayout();
+            var gelfLayout = new GelfLayout();
 
             gelfLayout.Facility = facility;
             gelfLayout.ExtraFields.Add(new GelfField("ThreadId", "${threadid}") { PropertyType = typeof(int) });
 
             gelfLayout.FullMessage = "${hostname}|${message}";
             gelfLayout.ShortMessage = "short|${message}";
-            
+
             var logEvent = new LogEventInfo
             {
                 LoggerName = loggerName,
@@ -769,7 +873,7 @@ namespace NLog.Layouts.GelfLayout.Test
 
             gelfLayout.FullMessage = "${hostname}|${message}";
             gelfLayout.ShortMessage = "short|${message}";
-            
+
             var logEvent = new LogEventInfo
             {
                 LoggerName = loggerName,

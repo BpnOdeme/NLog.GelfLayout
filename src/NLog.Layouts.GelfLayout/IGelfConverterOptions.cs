@@ -23,6 +23,11 @@ namespace NLog.Layouts.GelfLayout
         bool IncludeEventProperties { get; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether to include properties from the NLog GlobalDiagnosticsContext-dictionary
+        /// </summary>
+        bool IncludeGdc { get; }
+
+        /// <summary>
         /// Gets or sets a value indicating whether to include properties from the NLog ScopeContext-dictionary
         /// </summary>
         bool IncludeScopeProperties { get; }

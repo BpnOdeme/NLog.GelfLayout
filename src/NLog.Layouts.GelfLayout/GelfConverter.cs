@@ -119,9 +119,34 @@ namespace NLog.Layouts.GelfLayout
                     mdlcKeys = null;
             }
 
+            ICollection<string> gdcKeys = null;
+            if(converterOptions.IncludeGdc)
+            {
+                gdcKeys = GlobalDiagnosticsContext.GetNames();
+                bool foundGdcItem = false;
+                bool hasExcludedProperties = converterOptions.ExcludeProperties?.Count > 0;
+                foreach(string key in gdcKeys)
+                {
+                    if (string.IsNullOrEmpty(key) || ExcludePropertyKeys.Contains(key))
+                        continue;
+
+                    if (hasProperties && logEventInfo.Properties.ContainsKey(key))
+                        continue;
+
+                    if(hasExcludedProperties && converterOptions.ExcludeProperties.Contains(key))
+                        continue;
+
+                    foundGdcItem = true;
+                    object propertyValue = GlobalDiagnosticsContext.GetObject(key);
+                    AddAdditionalField(jsonWriter, key, propertyValue);
+                }
+                if (!foundGdcItem)
+                    gdcKeys = null;
+            }
+
             if (converterOptions.ExtraFields?.Count > 0)
             {
-                AddLayoutGelfFields(jsonWriter, logEventInfo, converterOptions.ExtraFields, hasProperties, mdlcKeys);
+                AddLayoutGelfFields(jsonWriter, logEventInfo, converterOptions.ExtraFields, hasProperties, mdlcKeys, gdcKeys);
             }
 
             jsonWriter.WriteEndObject();
@@ -182,7 +207,7 @@ namespace NLog.Layouts.GelfLayout
             jsonWriter.WriteValue(logEventInfo.Level.GetOrdinal());
         }
 
-        private void AddLayoutGelfFields(JsonWriter jsonWriter, LogEventInfo logEventInfo, IList<GelfField> gelfFields, bool hasProperties, ICollection<string> mdlcKeys)
+        private void AddLayoutGelfFields(JsonWriter jsonWriter, LogEventInfo logEventInfo, IList<GelfField> gelfFields, bool hasProperties, ICollection<string> mdlcKeys, ICollection<string> gdcKeys)
         {
             for (int i = 0; i < gelfFields.Count; ++i)
             {
@@ -203,6 +228,12 @@ namespace NLog.Layouts.GelfLayout
                 if (mdlcKeys != null)
                 {
                     if (mdlcKeys.Contains(gelfField.FieldName) || mdlcKeys.Contains(gelfField.CleanName))
+                        continue;
+                }
+
+                if(gdcKeys != null)
+                {
+                    if(gdcKeys.Contains(gelfField.FieldName) || gdcKeys.Contains(gelfField.CleanName))
                         continue;
                 }
 

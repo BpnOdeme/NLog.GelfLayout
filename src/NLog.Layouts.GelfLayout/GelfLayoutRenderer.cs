@@ -35,6 +35,9 @@ namespace NLog.Layouts.GelfLayout
         public bool IncludeScopeProperties { get; set; }
 
         /// <inheritdoc/>
+        public bool IncludeGdc { get; set; }
+
+        /// <inheritdoc/>
         [Obsolete("Replaced by IncludeEventProperties")]
         public bool IncludeAllProperties { get => IncludeEventProperties; set => IncludeEventProperties = value; }
 
