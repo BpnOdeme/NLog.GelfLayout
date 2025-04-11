@@ -33,6 +33,8 @@ namespace NLog.Layouts.GelfLayout
         public bool IncludeScopeProperties { get => _renderer.IncludeScopeProperties; set => _renderer.IncludeScopeProperties = value; }
 
         /// <inheritdoc/>
+        public bool IncludeGdc { get => _renderer.IncludeGdc; set => _renderer.IncludeGdc = value; }
+        /// <inheritdoc/>
         public ISet<string> ExcludeProperties { get => _renderer.ExcludeProperties; set => _renderer.ExcludeProperties = value; }
 
         /// <inheritdoc/>
