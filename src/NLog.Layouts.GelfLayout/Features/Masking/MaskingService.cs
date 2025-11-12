@@ -15,7 +15,7 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
     {
         private readonly MaskingOptions _options;
 
-        // Alan-adı kural index'i
+        // Alan-adı kural index'i (Normalize edilmiş ad -> kural)
         private readonly Dictionary<string, MaskingFieldRule> _fieldRuleIndex;
 
         // Tip -> plan cache
@@ -48,10 +48,20 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
                 StringComparison.OrdinalIgnoreCase :
                 StringComparison.Ordinal;
 
-            _fieldRuleIndex = (_options.Rules ?? new())
-                .Where(r => !string.IsNullOrWhiteSpace(r.Field))
-                .GroupBy(r => Normalize(r.Field))
-                .ToDictionary(g => g.Key, g => g.First());
+            // Kural alan adlarının tüm stil varyantlarını indexe koy
+            _fieldRuleIndex = new Dictionary<string, MaskingFieldRule>(
+                _options.CaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+
+            foreach (var rule in (_options.Rules ?? new()).Where(r => !string.IsNullOrWhiteSpace(r.Field)))
+            {
+                foreach (var variant in GetAllStyleVariants(rule.Field!))
+                {
+                    var key = Normalize(variant);
+                    // Aynı anahtar daha önce eklendiyse ilkini koru (deterministik davranış)
+                    if (!_fieldRuleIndex.ContainsKey(key))
+                        _fieldRuleIndex[key] = rule;
+                }
+            }
         }
 
         public T Mask<T>(T obj)
@@ -163,7 +173,7 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
                 }
                 else
                 {
-                    // Alan adına göre kural var mı?
+                    // Alan adına göre kural var mı? (tüm stil varyantlarını indexte arıyoruz)
                     var targetFieldName = m.Name;
                     if (_fieldRuleIndex.TryGetValue(Normalize(targetFieldName), out var rule))
                     {
@@ -235,11 +245,9 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
                     list.Add(null);
                     continue;
                 }
-                var t = it.GetType();
                 list.Add(MaskDynamic(it));
             }
 
-            // Orijinal tip IEnumerable ise koleksiyon yeni listeye kopyalanmış olur.
             return list;
         }
 
@@ -258,6 +266,7 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
 
                 if (k is string keyName)
                 {
+                    // Sözlük anahtarı hangi stilde olursa olsun Normalize(key) ile arıyoruz
                     if (_fieldRuleIndex.TryGetValue(Normalize(keyName), out var rule))
                     {
                         if (v is string vs)
@@ -421,5 +430,84 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
 
         private string Normalize(string s) =>
             _options.CaseInsensitive ? s.Trim().ToLowerInvariant() : s.Trim();
+
+        // ---------- İsim varyantları & tokenize ----------
+
+        // rule.Field için tüm stil varyantlarını üret
+        private IEnumerable<string> GetAllStyleVariants(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                yield break;
+
+            var tokens = TokenizeIdentifier(name);
+            if (tokens.Count == 0)
+                yield break;
+
+            // snake_case
+            yield return string.Join("_", tokens);
+            // kebab-case
+            yield return string.Join("-", tokens);
+            // PascalCase
+            yield return string.Concat(tokens.Select(UpperFirst));
+            // camelCase
+            yield return tokens.Count == 1
+                ? tokens[0]
+                : tokens[0] + string.Concat(tokens.Skip(1).Select(UpperFirst));
+
+            // Orijinal de dursun (normalize edilecek)
+            yield return name;
+
+            static string UpperFirst(string t)
+            {
+                if (string.IsNullOrEmpty(t)) return t;
+                if (t.Length == 1) return char.ToUpperInvariant(t[0]).ToString();
+                return char.ToUpperInvariant(t[0]) + t.Substring(1);
+            }
+        }
+
+        // "CreditCardNumber", "credit_card-number", "HTTPServerID" → ["credit","card","number"] gibi tokenize eder.
+        private static List<string> TokenizeIdentifier(string name)
+        {
+            var raw = name.Trim();
+
+            // Önce ayraçlara göre kaba bölme
+            var primaryParts = raw
+                .Replace('-', ' ')
+                .Replace('_', ' ')
+                .Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+            var tokens = new List<string>(primaryParts.Count() * 3);
+
+            foreach (var part in primaryParts)
+            {
+                // Camel/Pascal bölme: Büyük harf geçişlerini dikkate al
+                int start = 0;
+                for (int i = 1; i < part.Length; i++)
+                {
+                    var prev = part[i - 1];
+                    var curr = part[i];
+                    char? next = i + 1 < part.Length ? part[i + 1] : (char?)null;
+
+                    bool isBoundary =
+                        // lower -> UPPER geçişi
+                        (char.IsLower(prev) && char.IsUpper(curr)) ||
+                        // UPPER(serisi) -> Upper+lower (örn: "HTTPServer" -> H T T P | Server)
+                        (char.IsUpper(prev) && char.IsUpper(curr) && next.HasValue && char.IsLower(next.Value));
+
+                    if (isBoundary)
+                    {
+                        var seg = part.Substring(start, i - start);
+                        if (seg.Length > 0) tokens.Add(seg.ToLowerInvariant());
+                        start = i;
+                    }
+                }
+
+                var last = part.Substring(start);
+                if (last.Length > 0) tokens.Add(last.ToLowerInvariant());
+            }
+
+            // Tekrarları kaldır
+            return tokens.Where(t => !string.IsNullOrWhiteSpace(t)).ToList();
+        }
     }
 }
