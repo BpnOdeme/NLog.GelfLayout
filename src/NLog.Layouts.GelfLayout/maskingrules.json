@@ -1,0 +1,194 @@
+[
+  {
+    "Field": "Identity",
+    "Prefix": 0,
+    "Suffix": 0,
+    "IsExcluded": true
+  },
+  {
+    "Field": "NationalId",
+    "Prefix": 0,
+    "Suffix": 0,
+    "IsExcluded": true
+  },
+  {
+    "Field": "Birth",
+    "Prefix": 0,
+    "Suffix": 0,
+    "IsExcluded": true
+  },
+  {
+    "Field": "FirstName",
+    "Prefix": 2,
+    "Suffix": 2,
+    "IsExcluded": false
+  },
+  {
+    "Field": "LastName",
+    "Prefix": 2,
+    "Suffix": 2,
+    "IsExcluded": false
+  },
+  {
+    "Field": "FullName",
+    "Prefix": 2,
+    "Suffix": 2,
+    "IsExcluded": false
+  },
+  {
+    "Field": "Surname",
+    "Prefix": 2,
+    "Suffix": 2,
+    "IsExcluded": false
+  },
+  {
+    "Field": "UserName",
+    "Prefix": 2,
+    "Suffix": 2,
+    "IsExcluded": false
+  },
+  {
+    "Field": "Address",
+    "Prefix": 3,
+    "Suffix": 3,
+    "IsExcluded": false
+  },
+  {
+    "Field": "FullAddress",
+    "Prefix": 3,
+    "Suffix": 3,
+    "IsExcluded": false
+  },
+  {
+    "Field": "ZipPostalCode",
+    "Prefix": 3,
+    "Suffix": 3,
+    "IsExcluded": false
+  },
+  {
+    "Field": "PhoneNumber",
+    "Prefix": 3,
+    "Suffix": 3,
+    "IsExcluded": false
+  },
+  {
+    "Field": "Email",
+    "Prefix": 3,
+    "Suffix": 3,
+    "IsExcluded": false
+  },
+  {
+    "Field": "AccountNumber",
+    "Prefix": 3,
+    "Suffix": 3,
+    "IsExcluded": false
+  },
+  {
+    "Field": "WalletNumber",
+    "Prefix": 3,
+    "Suffix": 3,
+    "IsExcluded": false
+  },
+  {
+    "Field": "CustomerId",
+    "Prefix": 3,
+    "Suffix": 3,
+    "IsExcluded": false
+  },
+  {
+    "Field": "Iban",
+    "Prefix": 3,
+    "Suffix": 3,
+    "IsExcluded": false
+  },
+  {
+    "Field": "FastIban",
+    "Prefix": 3,
+    "Suffix": 3,
+    "IsExcluded": false
+  },
+  {
+    "Field": "CardNo",
+    "Prefix": 3,
+    "Suffix": 3,
+    "IsExcluded": false
+  },
+  {
+    "Field": "CCNo",
+    "Prefix": 3,
+    "Suffix": 3,
+    "IsExcluded": false
+  },
+  {
+    "Field": "Cvv",
+    "Prefix": 0,
+    "Suffix": 0,
+    "IsExcluded": true
+  },
+  {
+    "Field": "ExpiryMonth",
+    "Prefix": 0,
+    "Suffix": 0,
+    "IsExcluded": true
+  },
+  {
+    "Field": "ExpiryYear",
+    "Prefix": 0,
+    "Suffix": 0,
+    "IsExcluded": true
+  },
+  {
+    "Field": "AccessToken",
+    "Prefix": 0,
+    "Suffix": 0,
+    "IsExcluded": true
+  },
+  {
+    "Field": "RefreshToken",
+    "Prefix": 0,
+    "Suffix": 0,
+    "IsExcluded": true
+  },
+  {
+    "Field": "Password",
+    "Prefix": 0,
+    "Suffix": 0,
+    "IsExcluded": true
+  },
+  {
+    "Field": "Pin",
+    "Prefix": 0,
+    "Suffix": 0,
+    "IsExcluded": true
+  },
+  {
+    "Field": "OtpCode",
+    "Prefix": 0,
+    "Suffix": 0,
+    "IsExcluded": true
+  },
+  {
+    "Field": "TaxNumber",
+    "Prefix": 3,
+    "Suffix": 3,
+    "IsExcluded": false
+  },
+  {
+    "Field": "VatNumber",
+    "Prefix": 3,
+    "Suffix": 3,
+    "IsExcluded": false
+  },
+  {
+    "Field": "SubscriberNo",
+    "Prefix": 0,
+    "Suffix": 0,
+    "IsExcluded": true
+  },
+  {
+    "Field": "PassportNo",
+    "Prefix": 0,
+    "Suffix": 0,
+    "IsExcluded": true
+  }
+]
