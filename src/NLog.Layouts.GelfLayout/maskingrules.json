@@ -48,6 +48,18 @@
     "IsExcluded": false
   },
   {
+    "Field": "MotherName",
+    "Prefix": 2,
+    "Suffix": 2,
+    "IsExcluded": false
+  },
+  {
+    "Field": "FatherName",
+    "Prefix": 2,
+    "Suffix": 2,
+    "IsExcluded": false
+  },
+  {
     "Field": "Address",
     "Prefix": 3,
     "Suffix": 3,

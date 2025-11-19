@@ -353,55 +353,64 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
 				return MaskJsonCore(s);
 			}
 
-			// 2) İçinde ResponseBody: {...} gömülü ise sadece o JSON'u maskele
-			const string marker = "ResponseBody:";
+			// 2) İçinde RequestBody: {...} gömülü ise sadece o JSON'u maskele
+			s = MaskEmbeddedJsonAfterMarker(s, "RequestBody:");
+
+			// 3) İçinde ResponseBody: {...} gömülü ise sadece o JSON'u maskele
+			s = MaskEmbeddedJsonAfterMarker(s, "ResponseBody:");
+
+			// JSON değil veya marker'lar yakalanmadıysa dokunma
+			return s;
+		}
+
+		// Belirli bir marker'dan (örn: "RequestBody:" / "ResponseBody:") sonra gelen
+		// ilk JSON blok'u ({ ... }) bularak sadece o kısmı maskeleyen yardımcı metot
+		private string MaskEmbeddedJsonAfterMarker(string s, string marker)
+		{
 			var markerIndex = s.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-			if (markerIndex >= 0)
+			if (markerIndex < 0)
+				return s;
+
+			// Marker'dan sonra ilk '{' karakterini bul
+			var searchStart = markerIndex + marker.Length;
+			var openBraceIndex = s.IndexOf('{', searchStart);
+			if (openBraceIndex < 0)
+				return s;
+
+			// JSON blok sonunu bulmak için brace derinliği hesabı
+			int depth = 0;
+			int endIndex = -1;
+			for (int i = openBraceIndex; i < s.Length; i++)
 			{
-				// Marker'dan sonra ilk '{' karakterini bul
-				var searchStart = markerIndex + marker.Length;
-				var openBraceIndex = s.IndexOf('{', searchStart);
-				if (openBraceIndex >= 0)
+				char c = s[i];
+				if (c == '{') depth++;
+				else if (c == '}')
 				{
-					// JSON blok sonunu bulmak için brace derinliği hesabı
-					int depth = 0;
-					int endIndex = -1;
-					for (int i = openBraceIndex; i < s.Length; i++)
+					depth--;
+					if (depth == 0)
 					{
-						char c = s[i];
-						if (c == '{') depth++;
-						else if (c == '}')
-						{
-							depth--;
-							if (depth == 0)
-							{
-								endIndex = i;
-								break;
-							}
-						}
-					}
-
-					if (endIndex > openBraceIndex)
-					{
-						var jsonPart = s.Substring(openBraceIndex, endIndex - openBraceIndex + 1);
-						var maskedJson = MaskJsonCore(jsonPart);
-
-						// Maske başarısız olduysa orijinali koru
-						if (!string.IsNullOrEmpty(maskedJson))
-						{
-							return s.Substring(0, openBraceIndex)
-								 + maskedJson
-								 + s.Substring(endIndex + 1);
-						}
+						endIndex = i;
+						break;
 					}
 				}
 			}
 
-			// JSON değil veya ResponseBody yakalanmadıysa dokunma
-			return s;
+			if (endIndex <= openBraceIndex)
+				return s;
+
+			var jsonPart = s.Substring(openBraceIndex, endIndex - openBraceIndex + 1);
+			var maskedJson = MaskJsonCore(jsonPart);
+
+			// Maske başarısız olduysa orijinali koru
+			if (string.IsNullOrEmpty(maskedJson))
+				return s;
+
+			return s.Substring(0, openBraceIndex)
+				 + maskedJson
+				 + s.Substring(endIndex + 1);
 		}
 
-		// Sadece JSON string’i maskeleyen yardımcı
+		// Sadece JSON string'i maskeleyen yardımcı
 		private string MaskJsonCore(string json)
 		{
 			try
