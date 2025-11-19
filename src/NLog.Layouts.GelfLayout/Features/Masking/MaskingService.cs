@@ -346,14 +346,68 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
 		{
 			if (string.IsNullOrWhiteSpace(s)) return s;
 
-			// JSON gibi görünmüyorsa dokunma
+			// 1) Tüm string baştan sona JSON ise (mevcut davranış)
 			var first = s.TrimStart();
-			if (first.Length == 0 || (first[0] != '{' && first[0] != '[')) return s;
+			if (first.Length > 0 && (first[0] == '{' || first[0] == '['))
+			{
+				return MaskJsonCore(s);
+			}
 
+			// 2) İçinde ResponseBody: {...} gömülü ise sadece o JSON'u maskele
+			const string marker = "ResponseBody:";
+			var markerIndex = s.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+			if (markerIndex >= 0)
+			{
+				// Marker'dan sonra ilk '{' karakterini bul
+				var searchStart = markerIndex + marker.Length;
+				var openBraceIndex = s.IndexOf('{', searchStart);
+				if (openBraceIndex >= 0)
+				{
+					// JSON blok sonunu bulmak için brace derinliği hesabı
+					int depth = 0;
+					int endIndex = -1;
+					for (int i = openBraceIndex; i < s.Length; i++)
+					{
+						char c = s[i];
+						if (c == '{') depth++;
+						else if (c == '}')
+						{
+							depth--;
+							if (depth == 0)
+							{
+								endIndex = i;
+								break;
+							}
+						}
+					}
+
+					if (endIndex > openBraceIndex)
+					{
+						var jsonPart = s.Substring(openBraceIndex, endIndex - openBraceIndex + 1);
+						var maskedJson = MaskJsonCore(jsonPart);
+
+						// Maske başarısız olduysa orijinali koru
+						if (!string.IsNullOrEmpty(maskedJson))
+						{
+							return s.Substring(0, openBraceIndex)
+								 + maskedJson
+								 + s.Substring(endIndex + 1);
+						}
+					}
+				}
+			}
+
+			// JSON değil veya ResponseBody yakalanmadıysa dokunma
+			return s;
+		}
+
+		// Sadece JSON string’i maskeleyen yardımcı
+		private string MaskJsonCore(string json)
+		{
 			try
 			{
-				var node = JsonNode.Parse(s);
-				if (node is null) return s;
+				var node = JsonNode.Parse(json);
+				if (node is null) return json;
 
 				MaskJsonNode(node);
 				return node.ToJsonString(new JsonSerializerOptions { WriteIndented = false });
@@ -361,7 +415,7 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
 			catch
 			{
 				// geçersiz json: dokunma
-				return s;
+				return json;
 			}
 		}
 
