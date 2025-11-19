@@ -53,8 +53,18 @@ namespace NLog.Layouts.GelfLayout
             {
                 var ev = logEventInfo;
 
-                // 1) Parameters (Graylog target çoğu zaman buradan alan üretir)
-                if (ev.Parameters is { Length: > 0 })
+				// 0) Ham mesaj (template değil, message içeriği)
+				if (!string.IsNullOrEmpty(ev.Message))
+				{
+					var maskedMessage = _maskingService.Mask(ev.Message);
+					if (maskedMessage is not null)
+					{
+						ev.Message = maskedMessage.ToString();
+					}
+				}
+
+				// 1) Parameters (Graylog target çoğu zaman buradan alan üretir)
+				if (ev.Parameters is { Length: > 0 })
                 {
                     var p = ev.Parameters;
                     var clone = new object[p.Length];
@@ -100,22 +110,32 @@ namespace NLog.Layouts.GelfLayout
         {
             MaskLogEventInfo(logEventInfo);
 
-            //Retrieve the formatted message from LogEventInfo
-            var fullMessage = converterOptions.FullMessage?.Render(logEventInfo) ?? string.Empty;
-            if (fullMessage.Length > FullMessageMaxLength)
-            {
-                fullMessage = fullMessage.Substring(0, FullMessageMaxLength);
-            }
+			//Retrieve the formatted message from LogEventInfo
+			var fullMessage = converterOptions.FullMessage?.Render(logEventInfo) ?? string.Empty;
+			if (fullMessage.Length > FullMessageMaxLength)
+			{
+				fullMessage = fullMessage.Substring(0, FullMessageMaxLength);
+			}
 
-            //Figure out the short message
-            var shortMessage = converterOptions.ShortMessage?.Render(logEventInfo) ?? string.Empty;
-            if (shortMessage.Length > ShortMessageMaxLength)
-            {
-                shortMessage = shortMessage.Substring(0, ShortMessageMaxLength);
-            }
+			if (_maskingService is not null && !string.IsNullOrEmpty(fullMessage))
+			{
+				fullMessage = _maskingService.Mask(fullMessage);
+			}
 
-            //Construct the instance of GelfMessage
-            jsonWriter.WriteStartObject();
+			//Figure out the short message
+			var shortMessage = converterOptions.ShortMessage?.Render(logEventInfo) ?? string.Empty;
+			if (shortMessage.Length > ShortMessageMaxLength)
+			{
+				shortMessage = shortMessage.Substring(0, ShortMessageMaxLength);
+			}
+
+			if (_maskingService is not null && !string.IsNullOrEmpty(shortMessage))
+			{
+				shortMessage = _maskingService.Mask(shortMessage);
+			}
+
+			//Construct the instance of GelfMessage
+			jsonWriter.WriteStartObject();
 
             var hostname = _hostName ?? (_hostName = converterOptions.HostName?.Render(logEventInfo));
             if (string.IsNullOrEmpty(hostname))
