@@ -196,5 +196,17 @@
     "Prefix": 0,
     "Suffix": 0,
     "IsExcluded": true
+  },
+  {
+    "Field": "SenderName",
+    "Prefix": 2,
+    "Suffix": 2,
+    "IsExcluded": false
+  },
+  {
+    "Field": "ReceiverName",
+    "Prefix": 2,
+    "Suffix": 2,
+    "IsExcluded": false
   }
 ]

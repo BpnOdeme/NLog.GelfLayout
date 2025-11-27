@@ -1,4 +1,5 @@
 ﻿using NLog.Layouts.GelfLayout.Features.Masking;
+using NLog.Layouts.GelfLayout.Playground.Extensions;
 using System.Text.Json;
 
 namespace NLog.Layouts.GelfLayout.Playground;
@@ -139,7 +140,64 @@ internal class Program
         var maskedEdgeCasesDict = _maskingService.Mask(edgeCaseList);
         Console.WriteLine(JsonSerializer.Serialize(maskedEdgeCasesDict, new JsonSerializerOptions { WriteIndented = true }));
 
-        Console.WriteLine("\n=== TEST COMPLETED ===");
+		Console.WriteLine("\n--- Masked JSON Model ---");
+
+		string jsonTest = """
+        {
+          "Identity": "12345678901",
+          "NationalId": "99887766554",
+          "Birth": "1990-01-01",
+          "Cvv": "123",
+          "ExpiryMonth": "12",
+          "ExpiryYear": "2025",
+          "AccessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+          "RefreshToken": "d777-8888-9999-aaaa",
+          "Password": "MySecretPassword123!",
+          "Pin": "1234",
+          "OtpCode": "556677",
+          "SubscriberNo": "SUB123456",
+          "PassportNo": "U12345678",
+          "Secret": "TopSecretData",
+          
+          "FirstName": "Ahmet",
+          "LastName": "Yılmaz",
+          "FullName": "Ahmet Yılmaz",
+          "Surname": "Demir",
+          "UserName": "ahmet.y",
+          "MotherName": "Ayşe",
+          "FatherName": "Mehmet",
+        
+          "Address": "Atatürk Mah. Cumhuriyet Cad. No:1",
+          "FullAddress": "Atatürk Mah. Cumhuriyet Cad. No:1 D:5 İstanbul",
+          "ZipPostalCode": "34000",
+          "PhoneNumber": "+905551234567",
+          "Email": "ahmet.yilmaz@example.com",
+          "WalletNumber": "WL123456789",
+          "CustomerId": "CUST987654",
+          "Iban": "TR123456789012345678901234",
+          "FastIban": "TR987654321098765432109876",
+          "CardNo": "1111222233334444",
+          "CCNo": "5555666677778888",
+          "TaxNumber": "1234567890",
+          "VatNumber": "9876543210",
+        
+          "Product": "Laptop",
+          "AccountId": "ACC123",
+        
+          "TCKN": "11223344556",
+          
+          "SenderName": "Ayşe Fatma",
+          "SenderIban": "TR123456789012345678901234",
+          "SenderIdentityNumber": "11223344556",
+          "ReceiverName": "Ahmet Demir",
+          "ReceiverIban": "TR987654321098765432109876",
+          "ReceiverIdentityNumber": "99887766554"
+        }
+        """;
+		var maskedJsonTest = _maskingService.Mask(jsonTest);
+		Console.WriteLine(maskedJsonTest.JsonPrettify());
+
+		Console.WriteLine("\n=== TEST COMPLETED ===");
     }
 }
 
