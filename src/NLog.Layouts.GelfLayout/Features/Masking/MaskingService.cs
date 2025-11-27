@@ -61,9 +61,15 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
 
 			// ---- Rules artık appsettings’ten değil maskingrules.json’dan geliyor ----
 			var rulesFromJson = LoadRulesFromEmbeddedJson();
-			Debug.WriteLine(JsonSerializer.Serialize(rulesFromJson));
 
-			foreach (var rule in rulesFromJson.Where(r => !string.IsNullOrWhiteSpace(r.Field)))
+			// Hem gömülü kuralları hem de options ile gelen harici kuralları birleştir
+			var allRules = new List<MaskingFieldRule>(rulesFromJson);
+			if (_options.Rules != null && _options.Rules.Count > 0)
+			{
+				allRules.AddRange(_options.Rules);
+			}
+
+			foreach (var rule in allRules.Where(r => !string.IsNullOrWhiteSpace(r.Field)))
 			{
 				var key = Normalize(rule.Field!);
 				if (!_fieldRuleIndex.ContainsKey(key))
@@ -182,15 +188,23 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
 
 			var len = value!.Length;
 
-			// Prefix + Suffix uzunluğu aşarsa güvenli tercih -> Full mask
-			if (prefix + suffix >= len)
-			{
-				return new string(_options.MaskChar, len);
-			}
-
 			var keepLeft = prefix;
 			var keepRight = suffix;
 			var maskedCount = len - keepLeft - keepRight;
+
+			// En az 3 karakter maskelenmesi hedefleniyor.
+			if (maskedCount < 3)
+			{
+				keepLeft = keepLeft > 1 ? 1 : keepLeft;
+				keepRight = keepRight > 1 ? 1 : keepRight;
+				maskedCount = len - keepLeft - keepRight;
+
+				// Yine de 2 karakterden az maskeleniyorsa tamamen maskele
+				if (maskedCount < 2)
+				{
+					return new string(_options.MaskChar, len);
+				}
+			}
 
 			var sb = new StringBuilder(len);
 			if (keepLeft > 0) sb.Append(value, 0, keepLeft);
