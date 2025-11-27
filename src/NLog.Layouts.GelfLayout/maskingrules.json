@@ -90,12 +90,6 @@
     "IsExcluded": false
   },
   {
-    "Field": "AccountNumber",
-    "Prefix": 3,
-    "Suffix": 3,
-    "IsExcluded": false
-  },
-  {
     "Field": "WalletNumber",
     "Prefix": 3,
     "Suffix": 3,
