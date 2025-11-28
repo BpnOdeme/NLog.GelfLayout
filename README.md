@@ -151,6 +151,11 @@ Usually one will only use UDP on the local network, since no authentication or s
 Bu kütüphane, **NLog Layouts** veya genel .NET loglama süreçlerinde hassas verileri maskelemek için tasarlanmıştır.  
 Hem JSON hem de .NET nesneleri üzerinde çalışır, alan adlarına (property names) göre **ön ek / son ek koruma** veya **tam maskeleme / exclude** işlemleri uygular.
 
+## Yeni bir projeye kütüphane eklenirken yapılacak değişiklikler:
+- .nuget/nuget.config dosyasında ilgili değişiklikler yapılır.
+- Dockerfile içerisindeki restore adımına --configfile .nuget/nuget.config ifadesi eklenir.
+- .github/workflows/build-dotnet-api.yml içerisinde restore adımına --configfile .nuget/nuget.config ifadesi eklenir.
+
 Bu kütüphaneyi kullanacak projelerde yalnızca aşağıdaki yapılandırmalara dikkat etmek gerekmektedir:
 ```csharp
 // This method should always be above the Nlog configuration methods
