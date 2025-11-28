@@ -205,50 +205,6 @@ Maskeleme servisi NLog Gelf Layouts yapılandırmalarından önce DI'ya eklenmel
     "Enabled": true,
     "MaskChar": "*",
     "FullExcludeAsEmpty": true, // Exclude=true ise "" döndür (false yaparsanız tümü * ile kaplanır)
-    "Rules": [
-        {
-            "Field": "AccountNumber",
-            "Prefix": 6,
-            "Suffix": 4,
-            "Exclude": false
-        },
-        {
-            "Field": "NationalId",
-            "Prefix": 4,
-            "Suffix": 4,
-            "Exclude": false
-        },
-        {
-            "Field": "SerialNo",
-            "Prefix": 3,
-            "Suffix": 3,
-            "Exclude": false
-        },
-        {
-            "Field": "FirstName",
-            "Prefix": 3,
-            "Suffix": 3,
-            "Exclude": false
-        },
-        {
-            "Field": "LastName",
-            "Prefix": 3,
-            "Suffix": 3,
-            "Exclude": false
-        },
-        {
-            "Field": "MotherName",
-            "Prefix": 3,
-            "Suffix": 3,
-            "Exclude": false
-        },
-        {
-            "Field": "FatherName",
-            "Prefix": 3,
-            "Suffix": 3,
-            "Exclude": false
-        }
-    ],
     "CaseInsensitive": true
 }
 ```
