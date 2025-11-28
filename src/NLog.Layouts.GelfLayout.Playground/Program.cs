@@ -195,7 +195,7 @@ internal class Program
         }
         """;
 		var maskedJsonTest = _maskingService.Mask(jsonTest);
-		Console.WriteLine(maskedJsonTest.JsonPrettify());
+		Console.WriteLine(JsonSerializer.Serialize(maskedJsonTest).JsonPrettify());
 
 		Console.WriteLine("\n=== TEST COMPLETED ===");
     }
