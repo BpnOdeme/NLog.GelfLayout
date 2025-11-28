@@ -31,19 +31,18 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
 		private sealed record MemberPlan
 		{
 			public MemberPlan(
-				Action<object, object> setter,
+				string name,
 				Func<object, object> getter,
 				Func<object, object> masker)
 			{
-				Setter = setter;
+				Name = name;
 				Getter = getter;
 				Masker = masker;
 			}
 
-			// Üyeyi nasıl maskeleyeceğimizi kapsüller
-			public Action<object, object?> Setter { get; set; }
-			public Func<object, object?> Getter { get; set; }
-			public Func<object?, object?> Masker { get; set; }
+			public string Name { get; }
+			public Func<object, object?> Getter { get; }
+			public Func<object?, object?> Masker { get; }
 		}
 
 		public MaskingService(MaskingOptions options)
@@ -129,7 +128,7 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
 			throw new InvalidOperationException("maskingrules.json formatı geçersiz.");
 		}
 
-		public T Mask<T>(T obj)
+		public object? Mask(object? obj)
 		{
 			if (!_options.Enabled || obj is null) return obj;
 
@@ -139,15 +138,14 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
 			if (IsPrimitiveLike(type)) return obj;
 
 			// String ise JSON da olabilir
-			if (obj is string s) return (T)(object)MaskPossiblyJsonString(s);
+			if (obj is string s) return MaskPossiblyJsonString(s);
 
 			// Dictionary / IEnumerable / dinamik
-			if (obj is IDictionary dict) return (T)MaskDictionary(dict)!;
-			if (obj is IEnumerable en) return (T)MaskEnumerable(en, type)!;
+			if (obj is IDictionary dict) return MaskDictionary(dict);
+			if (obj is IEnumerable en) return MaskEnumerable(en, type);
 
-			// Strongly-typed sınıf: attribute + alan adı kuralları
-			ApplyPlans(obj!, type);
-			return obj!;
+			// Strongly-typed sınıf: attribute + alan adı kuralları -> Dictionary'e çevir
+			return MaskObject(obj!, type);
 		}
 
 		public object? MaskDynamic(object? value)
@@ -164,8 +162,7 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
 			if (value is IDictionary dict) return MaskDictionary(dict);
 			if (value is IEnumerable en) return MaskEnumerable(en, t);
 
-			ApplyPlans(value, t);
-			return value;
+			return MaskObject(value, t);
 		}
 
 		public string MaskJson(string json) => MaskPossiblyJsonString(json);
@@ -215,15 +212,19 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
 
 		// ---------- İç yardımcı metotlar ----------
 
-		private void ApplyPlans(object obj, Type type)
+		private object MaskObject(object obj, Type type)
 		{
 			var plans = _planCache.GetOrAdd(type, BuildPlans);
+			var dict = new Dictionary<string, object?>(plans.Count);
+
 			foreach (var plan in plans)
 			{
 				var current = plan.Getter(obj);
 				var masked = plan.Masker(current);
-				plan.Setter(obj, masked);
+				dict[plan.Name] = masked;
 			}
+
+			return dict;
 		}
 
 		private List<MemberPlan> BuildPlans(Type type)
@@ -234,8 +235,7 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
 			{
 				var memberType = GetMemberType(m);
 				var getter = CompileGetter(m, type);
-				var setter = CompileSetter(m, type);
-
+				
 				// Sınıfa tanımlı bir attribute mü?
 				var attr = m.GetCustomAttribute<MaskAttribute>();
 				Func<object?, object?> masker;
@@ -259,7 +259,7 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
 					}
 				}
 
-				plans.Add(new MemberPlan(setter, getter, masker));
+				plans.Add(new MemberPlan(m.Name, getter, masker));
 			}
 			return plans;
 		}
@@ -302,8 +302,7 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
 			if (value is IEnumerable en) return MaskEnumerable(en, type);
 
 			// Strongly typed complex type
-			ApplyPlans(value, type);
-			return value;
+			return MaskObject(value, type);
 		}
 
 		private object? MaskEnumerable(IEnumerable en, Type enumerableType)
@@ -326,12 +325,14 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
 		private object? MaskDictionary(IDictionary dict)
 		{
 			// key -> value, value string/primitive ise alan adına göre maskele
-			var keys = new List<object?>();
-			foreach (var k in dict.Keys) keys.Add(k);
-
-			foreach (var k in keys)
+			var newDict = new Dictionary<object, object?>(dict.Count);
+			
+			foreach (DictionaryEntry kv in dict)
 			{
-				var v = dict[k!];
+				var k = kv.Key;
+				var v = kv.Value;
+				
+				object? maskedValue;
 
 				if (k is string keyName)
 				{
@@ -340,20 +341,29 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
 					{
 						if (v is string vs)
 						{
-							dict[k!] = MaskValue(vs, rule.Prefix, rule.Suffix, rule.Exclude);
-							continue;
+							maskedValue = MaskValue(vs, rule.Prefix, rule.Suffix, rule.Exclude);
 						}
-						// diğer tipler: rekürsif
-						dict[k!] = MaskDynamic(v);
-						continue;
+						else
+						{
+							// diğer tipler: rekürsif
+							maskedValue = MaskDynamic(v);
+						}
+					}
+					else 
+					{
+						// alan adı kuralı yoksa: yine de güvenli tarafta rekürsif maskele
+						maskedValue = MaskDynamic(v);
 					}
 				}
-
-				// alan adı kuralı yoksa: yine de güvenli tarafta rekürsif maskele
-				dict[k!] = MaskDynamic(v);
+				else
+				{
+					maskedValue = MaskDynamic(v);
+				}
+				
+				newDict[k] = maskedValue;
 			}
 
-			return dict;
+			return newDict;
 		}
 
 		private string MaskPossiblyJsonString(string s)
@@ -529,29 +539,6 @@ namespace NLog.Layouts.GelfLayout.Features.Masking
 
 			var box = Expression.Convert(access, typeof(object));
 			return Expression.Lambda<Func<object, object?>>(box, obj).Compile();
-		}
-
-		private static Action<object, object?> CompileSetter(MemberInfo m, Type declaring)
-		{
-			var obj = Expression.Parameter(typeof(object), "obj");
-			var value = Expression.Parameter(typeof(object), "value");
-			var castObj = Expression.Convert(obj, declaring);
-
-			switch (m)
-			{
-				case PropertyInfo p:
-					var valCastP = Expression.Convert(value, p.PropertyType);
-					var setP = Expression.Call(castObj, p.GetSetMethod()!, valCastP);
-					return Expression.Lambda<Action<object, object?>>(setP, obj, value).Compile();
-
-				case FieldInfo f:
-					var valCastF = Expression.Convert(value, f.FieldType);
-					var setF = Expression.Assign(Expression.Field(castObj, f), valCastF);
-					return Expression.Lambda<Action<object, object?>>(setF, obj, value).Compile();
-
-				default:
-					throw new NotSupportedException();
-			}
 		}
 
 		private static bool IsPrimitiveLike(Type t) =>

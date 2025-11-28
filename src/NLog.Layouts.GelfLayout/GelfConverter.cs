@@ -119,7 +119,11 @@ namespace NLog.Layouts.GelfLayout
 
 			if (_maskingService is not null && !string.IsNullOrEmpty(fullMessage))
 			{
-				fullMessage = _maskingService.Mask(fullMessage);
+				var maskedFull = _maskingService.Mask(fullMessage);
+				if (maskedFull != null)
+				{
+					fullMessage = maskedFull.ToString();
+				}
 			}
 
 			//Figure out the short message
@@ -131,7 +135,11 @@ namespace NLog.Layouts.GelfLayout
 
 			if (_maskingService is not null && !string.IsNullOrEmpty(shortMessage))
 			{
-				shortMessage = _maskingService.Mask(shortMessage);
+				var maskedShort = _maskingService.Mask(shortMessage);
+				if (maskedShort != null)
+				{
+					shortMessage = maskedShort.ToString();
+				}
 			}
 
 			//Construct the instance of GelfMessage

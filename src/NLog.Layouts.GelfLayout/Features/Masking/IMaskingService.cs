@@ -2,8 +2,8 @@
 {
     public interface IMaskingService
     {
-        /// <summary> T tipindeki nesneyi maskeler (attribute + alan adı kuralları). </summary>
-        T Mask<T>(T obj);
+        /// <summary> Nesneyi maskeler (attribute + alan adı kuralları). Orijinal nesneyi bozmaz, yeni bir kopya (genellikle Dictionary veya string) döner. </summary>
+        object? Mask(object? obj);
 
         /// <summary> JSON string'i alan adına göre maskeler. Bozuk JSON ise orijinali döndürür. </summary>
         string MaskJson(string json);
