@@ -151,10 +151,37 @@ Usually one will only use UDP on the local network, since no authentication or s
 Bu kütüphane, **NLog Layouts** veya genel .NET loglama süreçlerinde hassas verileri maskelemek için tasarlanmıştır.  
 Hem JSON hem de .NET nesneleri üzerinde çalışır, alan adlarına (property names) göre **ön ek / son ek koruma** veya **tam maskeleme / exclude** işlemleri uygular.
 
-## Yeni bir projeye kütüphane eklenirken yapılacak değişiklikler:
-- .nuget/nuget.config dosyasında ilgili değişiklikler yapılır.
-- Dockerfile içerisindeki restore adımına --configfile .nuget/nuget.config ifadesi eklenir.
-- .github/workflows/build-dotnet-api.yml içerisinde restore adımına --configfile .nuget/nuget.config ifadesi eklenir.
+## Yeni bir projeye bu kütüphane eklenirken yapılması gereken değişiklikler:
+- `.nuget/nuget.config` dosyasında aşağıdaki gibi değişiklikler yapılır:
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+    <add key="github" value="https://nuget.pkg.github.com/BpnOdeme/index.json" />
+  </packageSources>
+  <packageSourceCredentials>
+    <github>
+      <add key="Username" value="<USERNAME>" />
+      <add key="ClearTextPassword" value="<GITHUB_PATH>" />
+    </github>
+  </packageSourceCredentials>
+  <packageRestore>
+    <add key="enabled" value="True" />
+    <add key="automatic" value="True" />
+  </packageRestore>
+  <bindingRedirects>
+    <add key="skip" value="False" />
+  </bindingRedirects>
+  <packageManagement>
+    <add key="format" value="0" />
+    <add key="disabled" value="False" />
+  </packageManagement>
+</configuration>
+```
+- Dockerfile içerisinde, `Copy csproj and restore dependencies` adımında csproj dosyalarını kopyalama işleminden hemen sonra `COPY [".nuget/nuget.config", ".nuget/nuget.config"]` ifadesi eklenir.
+- Dockerfile içerisinde, `dotnet restore` adımının sonuna `--configfile .nuget/nuget.config` ifadesi eklenir.
+- `.github/workflows/build-dotnet-api.yml` dosyası içerisinde `dotnet restore` adımının sonuna `--configfile .nuget/nuget.config` ifadesi eklenir.
 
 Bu kütüphaneyi kullanacak projelerde yalnızca aşağıdaki yapılandırmalara dikkat etmek gerekmektedir:
 ```csharp
